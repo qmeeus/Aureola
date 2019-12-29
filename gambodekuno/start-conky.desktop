@@ -2,7 +2,7 @@
 
 [Desktop Entry]
 Type=Application
-Exec=conky
+Exec=conky -q -c /home/quent/.config/conky/conky.conf
 Icon=conky
 X-GNOME-Autostart-enabled=true
 X-MATE-Autostart-enabled=true

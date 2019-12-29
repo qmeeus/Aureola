@@ -1,13 +1,13 @@
 
 # dimensions  1366x748
-WIDTH = 1366;
-HEIGHT = 748;
+WIDTH = 1700;
+HEIGHT = 900;
 
 # network eth0 or wlan0
-NETWORK = wlp2s0;
+NETWORK = wlo1;
 
 # cpu 2,4,8
-NO_OF_CORES = 4;
+NO_OF_CORES = 8;
 
 # color scheme the values are DARK or WHITE
 # CHANGE IT AND RERUN THE CONKY VIA CONKY-MANAGER

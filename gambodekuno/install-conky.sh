@@ -374,6 +374,67 @@ case $DISTRO in
 		echo "- lm-sensors"
 		;;
 
+    openSUSE)
+
+         # C O N K Y
+
+         # check if conky is installed
+         if ! location="$(type -p "conky")" || [ -z "conky" ]; then
+
+             echo "################################################################"
+             echo "installing conky for this script to work"
+             echo "################################################################"
+
+             sudo zypper in conky
+
+           else
+             echo "Conky was installed. Proceeding..."
+         fi
+
+     # S E N S O R S
+
+
+         # The conky depends on lm-sensors to know the motherboard and manufacturer
+         # check if lm-sensors is installed
+
+         if ! location="$(type -p "sensors")" || [ -z "sensors" ]; then
+
+             echo "################################################################"
+             echo "installing sensors for this script to work"
+             echo "#################################################################"
+
+             sudo zypper in sensors
+
+           else
+             echo "sensors was installed. Proceeding..."
+
+         fi
+
+
+
+     # V N S T A T
+
+
+         # The conky depends on vnstat to know the motherboard and manufacturer
+         # check if vnstat is installed
+
+         if ! location="$(type -p "vnstat")" || [ -z "vnstat" ]; then
+
+             echo "################################################################"
+             echo "installing vnstat for this script to work"
+             echo "#################################################################"
+
+             sudo zypper in vnstat
+
+
+
+           else
+             echo "vnstat was installed. Proceeding..."
+
+         fi
+         ;;
+
+
 	*)
 		echo "No dependancies installed."
 		echo "No installation lines for your system."

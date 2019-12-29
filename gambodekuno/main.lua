@@ -1,7 +1,7 @@
 require "cairo" -- cairo graphic library
 
-function set_color( num, alpha) 
-	
+function set_color( num, alpha)
+
 	-- for white color num has no significance
 	if color == "WHITE" then
 		cairo_set_source_rgba(cr, 1, 1, 1, alpha);
@@ -15,43 +15,42 @@ function set_color( num, alpha)
 end
 
 -- the funtion which paints the image in circle
-function draw_image (ir,xc, yc, radius, path) 
+function draw_image(ir,xc, yc, radius, path)
 	local w, h;
 
-	cairo_arc (ir, xc, yc, radius, 0, 2*math.pi);
-	cairo_clip (ir);
-	cairo_new_path (ir); 
+	cairo_arc(ir, xc, yc, radius, 0, 2*math.pi);
+	cairo_clip(ir);
+	cairo_new_path(ir);
 
 
-	local image = cairo_image_surface_create_from_png (path);
-	w = cairo_image_surface_get_width (image);
-	h = cairo_image_surface_get_height (image);
+	local image = cairo_image_surface_create_from_png(path);
+	w = cairo_image_surface_get_width(image);
+	h = cairo_image_surface_get_height(image);
 
 
-	cairo_scale (ir, 2*radius/w, 2*radius/h);
-	w = cairo_image_surface_get_width (image);
-	h = cairo_image_surface_get_height (image);
+	cairo_scale(ir, 2*radius/w, 2*radius/h);
+	w = cairo_image_surface_get_width(image);
+	h = cairo_image_surface_get_height(image);
 
-	cairo_set_source_surface (ir, image, xc*(1/(2*radius/w)) - w/2, yc*(1/(2*radius/h)) - h/2);
-	cairo_paint (ir);
+	cairo_set_source_surface(ir, image, xc*(1/(2*radius/w)) - w/2, yc*(1/(2*radius/h)) - h/2);
+	cairo_paint(ir);
 
-	cairo_surface_destroy (image);
+	cairo_surface_destroy(image);
 	cairo_destroy(ir);
 end
 
-
---  the funtion which will be called at the beginning of the run, used to setup a few global values
-function conky_setup(  )
+-- setup a few global values
+function conky_setup()
 
 	-- getting the path of the conky
 	local pathway = script_path()
 	--print (pathway)
-	
+
 	-- opening the settings file for reading the variabes
 	local file = io.open(pathway.."settings");
 	local output = file:read("*a");
 	io.close(file);
-	
+
 	-- reading the variables
 	local nex = 0;
 	-- dimensions
@@ -66,20 +65,18 @@ function conky_setup(  )
 	-- gmail
 	_,nex,mail = string.find(output, "MAIL%s*=%s*(.-)%s*;",nex);
 	-- startup variables
-	check_mail = 1;
+	check_mail = 0;
 	start = 1;
 
 	-- checking for internet connection
-	local file = io.popen("/sbin/route -n | grep -c '^0\.0\.0\.0'");
+	chkconn = "ping -c1 google.com 2> /dev/null | grep -c '1 packets transmitted'"
+	local file = io.popen(chkconn);
 	internet = tonumber(file:read("*a"));
 	io.close(file);
 
 end
 
-
-
 -- the function to get the absolute path where the conky is
-
 function script_path()
    local str = debug.getinfo(2, "S").source:sub(2)
    return str:match("(.*/)")
@@ -87,17 +84,23 @@ end
 
 
 function conky_main(  )
-	
+
 	-- if no conky window then exit
 	if conky_window == nil then return end
 
 	-- the number of update
 	local updates = tonumber(conky_parse("${updates}"));
 	-- if not third update exit
-	if updates < 3 then return end	
+	if updates < 3 then return end
 
 	-- prepare cairo drawing surface
-	local cs = cairo_xlib_surface_create(conky_window.display, conky_window.drawable, conky_window.visual, conky_window.width, conky_window.height);
+	local cs = cairo_xlib_surface_create(
+		conky_window.display,
+		conky_window.drawable,
+		conky_window.visual,
+		conky_window.width,
+		conky_window.height);
+
 	cr = cairo_create(cs);
 
 	-- for text extents
@@ -114,24 +117,17 @@ function conky_main(  )
 	-- setup variables for web based content
 	local min = tonumber(conky_parse('${time %M}'));
 	local sec = tonumber(conky_parse('${time %S}'));
-	local file = io.popen("/sbin/route -n | grep -c '^0\.0\.0\.0'");
+	local file = io.popen(chkconn);
 	internet = tonumber(file:read("*a"));
-	io.close(file);	
+	io.close(file);
 
 
-	-- the centered photo ------------------------------------------- the centered image -------------------------------------------------------
-
+	------------------------ centered image ------------------------
 	local face_radius = 40;
 
 	-- image
 	local ir = cairo_create(cs);
-	draw_image(ir, centerx, centery, face_radius, pathway.."linuxmint");
-	--draw_image(ir, centerx, centery, face_radius, "ubuntu_1"); 
-	--draw_image(ir, centerx, centery, face_radius, "ubuntu_2);
-	--draw_image(ir, centerx, centery, face_radius, "linux_mint_1");
-	--draw_image(ir, centerx, centery, face_radius, "linux_mint_2");
-	--draw_image(ir, centerx, centery, face_radius, "linux_mint_3");
-	--draw_image(ir, centerx, centery, face_radius, "ubuntu_1");
+	draw_image(ir, centerx, centery, face_radius, pathway.."kali");
 
 	-- color and other settings for outher boundary
 	set_color(1,0.9);
@@ -143,9 +139,7 @@ function conky_main(  )
 	cairo_arc(cr, centerx , centery, face_radius, 0, 2*math.pi);
 	cairo_stroke(cr);
 
-
-	-- cpu stats ------------------------------------------------------------ cpu ----------------------------------------------------------------------------
-
+	-------------------------- cpu stats ---------------------------
 	local angle = 10*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -202,25 +196,6 @@ function conky_main(  )
 	-- outside boundry
 	cairo_arc(cr, item_centerx, item_centery, item_radius + 5,  0, 2*math.pi );
 	set_color(1,1);
-	--if tonumber(cpu) > 50 then
-	--	cairo_set_source_rgba(cr,1,0,0,1);
-	--end
-	--if you want to color the boundry too uncomment these
-	--if tonumber(cpu) > 5 then
-	--	cairo_set_source_rgba(cr,0.64,0.67,0.5,0.4);
-	--end
-	--if tonumber(cpu) > 10 then
-	--	cairo_set_source_rgba(cr,0.85,0.54,0.51,0.4);
-	--end
-	--if tonumber(cpu) > 15 then
-	--	cairo_set_source_rgba(cr,0.57,1,0.5,0.4);
-	--end
-	--if tonumber(cpu) > 20 then
-	--	cairo_set_source_rgba(cr,0.33,0.93,0.54,0.4);
-	--end
-	--if tonumber(cpu) > 25 then
-	--	cairo_set_source_rgba(cr,1,0,0,0.4);
-	--end
 	cairo_stroke(cr);
 
 	-- font settings
@@ -238,23 +213,21 @@ function conky_main(  )
 	text = cpu.."%";
 	cairo_text_extents(cr, text, extents)
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
-	cairo_show_text(cr, text);	
+	cairo_show_text(cr, text);
 
 
-	-- top 10 process ------------------------------------------------ top 10 process cpu -------------------------------------------------------------
-
+	---------------------- top 10 process cpu ----------------------
 	angle = angle - 10*(math.pi/180);
-	item_startx = item_centerx + item_radius + 5;	
+	item_startx = item_centerx + item_radius + 5;
 	item_starty = item_centery;
 	item_endx = item_startx + math.cos(angle) * width/6;
 	item_endy = item_starty + math.sin(angle) * height/6;
-	item_curvex = item_startx + math.cos(angle) * width/12;
-	item_curvey = item_starty + math.sin(angle) * height/12;
-	-- print(item_startx.." "..item_starty.." "..item_endx.." "..item_endy.." "..item_curvex.." "..item_curvey)
+	item_curvex = item_startx -30 + math.cos(angle) * width/8;
+	item_curvey = item_starty - 80 + math.sin(angle) * height/12;
 
 	-- arrow
 	cairo_move_to(cr, item_startx, item_starty);
-	cairo_curve_to(cr, item_curvex, item_curvey, item_curvex, item_curvey-100, item_endx, item_endy);
+	cairo_curve_to(cr, item_curvex, item_curvey, item_curvex, item_curvey, item_endx, item_endy);
 	set_color(1,0.5);
 	cairo_stroke(cr);
 
@@ -283,14 +256,13 @@ function conky_main(  )
 		cairo_show_text(cr,text);
 	end
 
-
-	-- cpu cores ---------------------------------------------- cpu cores ---------------------------------------------------------
-	angle = angle + 70*(math.pi/180);
+	-------------------------- cpu cores ---------------------------
+	 --[=====[
+    angle = angle + 70*(math.pi/180);
 	item_endx = item_startx + math.cos(angle) * width/6;
 	item_endy = item_starty + math.sin(angle) * height/8;
 	item_curvex = item_startx + math.cos(angle) * width/12;
 	item_curvey = item_starty + math.sin(angle) * height/12;
-	-- print(item_startx.." "..item_starty.." "..item_endx.." "..item_endy.." "..item_curvex.." "..item_curvey)
 
 	-- arrow
 	cairo_move_to(cr, item_startx, item_starty);
@@ -320,10 +292,8 @@ function conky_main(  )
 		cairo_move_to(cr, item_endx - extents.width/2, item_endy + item_font_size/1.2 * (i+1) + 5);
 		cairo_show_text(cr,text);
 	end
-
-
-	-- swap ------------------------------------------------------------ swap ----------------------------------------------------------------------------
-
+    --]=====]
+	----------------------------- swap -----------------------------
 	local angle = 35*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -386,9 +356,7 @@ function conky_main(  )
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
 	cairo_show_text(cr, text);
 
-
-	-- uptime ------------------------------------------------------------ uptime ----------------------------------------------------------------------------
-
+	---------------------------- uptime ----------------------------
 	local angle = 90*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -448,9 +416,7 @@ function conky_main(  )
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
 	cairo_show_text(cr, text);
 
-
-	-- Home file system ------------------------------------------------------------ hom fs ----------------------------------------------------------------------------
-
+	----------------------------- GPU ------------------------------
 	local angle = 130*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -463,10 +429,6 @@ function conky_main(  )
 	local item_centery = item_endy + math.sin(angle) * (item_radius + 5);
 	local item_font_size = height/50;
 
-	-- value of free space and total space
-	local free = "Free: "..conky_parse("${fs_free /home}");
-	local total = "Total: "..conky_parse("${fs_size /home}");
-
 	-- arrow to root
 	cairo_move_to(cr, item_startx, item_starty);
 	cairo_curve_to(cr, item_curvex, item_curvey, item_curvex, item_curvey+100, item_endx, item_endy);
@@ -478,9 +440,9 @@ function conky_main(  )
 	set_color(1,0.4);
 	cairo_fill(cr);
 
-	-- root drive image
+	-- cpu image
 	local ir = cairo_create(cs);
-	image_path = "root";
+	image_path = "cpu";
 	if color == "WHITE" then
 		image_path = pathway.."white/"..image_path
 	end
@@ -500,24 +462,18 @@ function conky_main(  )
 	cairo_set_font_size(cr, item_font_size);
 
 	-- name text
-	text = "HOME";
-	cairo_text_extents(cr, text, extents)
+	text = "GPU";
+  cairo_text_extents(cr, text, extents)
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery - item_radius - 10);
 	cairo_show_text(cr, text);
 
 	-- value text
-	text = free;
-	cairo_text_extents(cr, text, extents)
+    gpu_stats = conky_parse("${execi 2 "..pathway.."check-nvidia.sh}");
+  cairo_text_extents(cr, gpu_stats, extents);
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
-	cairo_show_text(cr, text);
-	text = total;
-	cairo_text_extents(cr, text, extents)
-	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size*2 + 8);
-	cairo_show_text(cr, text);
+  cairo_show_text(cr, gpu_stats);
 
-
-	-- ram  ------------------------------------------------------------ ram ----------------------------------------------------------------------------
-
+	----------------------------- RAM ------------------------------
 	local angle = 210*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -577,17 +533,14 @@ function conky_main(  )
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
 	cairo_show_text(cr, text);
 
-
-	-- top 10 process ------------------------------------------------ top 10 process ram -------------------------------------------------------------
-
+	---------------------- top 10 process ram ----------------------
 	angle = angle + 20*(math.pi/180);
-	item_startx = item_centerx - item_radius - 5;	
+	item_startx = item_centerx - item_radius - 5;
 	item_starty = item_centery;
 	item_endx = item_startx + math.cos(angle) * width/6;
 	item_endy = item_starty + math.sin(angle) * height/6;
 	item_curvex = item_startx + math.cos(angle) * width/12;
 	item_curvey = item_starty + math.sin(angle) * height/12;
-	-- print(item_startx.." "..item_starty.." "..item_endx.." "..item_endy.." "..item_curvex.." "..item_curvey)
 
 	-- arrow
 	cairo_move_to(cr, item_startx, item_starty);
@@ -611,18 +564,15 @@ function conky_main(  )
 	cairo_select_font_face(cr,"Inconsolata",0,0);
 	cairo_set_font_size(cr,item_font_size/1.4);
 	for i = 1,10 do
-		local addison = "                 ";
-		local name = string.sub(conky_parse("${top_mem name "..i.."}")..addison,1,10);
+        local addison = "                 ";
+        local name = string.sub(conky_parse("${top_mem name "..i.."}")..addison,1,15);
 		local value = conky_parse("${top_mem mem_res "..i.."}");
-		text = name.." "..value;
-		-- this works too : text = string.format("%-13s %-10s", name , value)
+		text = name.."   "..value
 		cairo_move_to(cr, item_endx - extents.width/2, item_endy + item_font_size/1.2 * (i+1) + 5);
 		cairo_show_text(cr,text);
 	end
 
-
-	-- disk input output  ------------------------------------------------------------ disk io ----------------------------------------------------------------------------
-
+	--------------------------- disk io ----------------------------
 	local angle = 170*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -637,6 +587,8 @@ function conky_main(  )
 
 	-- value of disk io
 	local diskio = conky_parse("${diskio}");
+    local diskio_r = conky_parse("${diskio_read}")
+    local diskio_w = conky_parse("${diskio_write}");
 
 	-- arrow to disk io
 	cairo_move_to(cr, item_startx, item_starty);
@@ -647,7 +599,7 @@ function conky_main(  )
 	-- background circle
 	cairo_arc(cr, item_centerx, item_centery, item_radius+5,  0, 2*math.pi );
 	set_color(1,0.4);
-	--cairo_set_source_rgba(cr,1,1,1,0.4);
+	cairo_set_source_rgba(cr,1,1,1,0.4);
 	if string.match(diskio,'M') then
 		diskio_nr = tonumber(string.sub(diskio, 1, -2));
 		if tonumber(diskio_nr) > 10 then
@@ -658,7 +610,6 @@ function conky_main(  )
 		end
 	end
 	cairo_fill(cr);
-
 
 	-- root drive image
 	local ir = cairo_create(cs);
@@ -682,29 +633,26 @@ function conky_main(  )
 	cairo_set_font_size(cr, item_font_size);
 
 	-- name text
-	text = "DISK I/O";
+	text = "DISK";
 	cairo_text_extents(cr, text, extents)
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery - item_radius - 10);
 	cairo_show_text(cr, text);
 
 	-- value text
-	text = diskio;
-	cairo_text_extents(cr, text, extents)
+    text = diskio_r.." / "..diskio_w;
+
+    cairo_text_extents(cr, text, extents)
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
 	cairo_show_text(cr, text);
-	
 
-
-	-- disk read write ------------------------------------------------ read write -------------------------------------------------------------
-
+	-------------------------- disk usage --------------------------
 	angle = angle + 10*(math.pi/180);
-	item_startx = item_centerx - item_radius - 5;	
+	item_startx = item_centerx - item_radius - 5;
 	item_starty = item_centery;
 	item_endx = item_startx + math.cos(angle) * width/8;
 	item_endy = item_starty + math.sin(angle) * height/6;
 	item_curvex = item_startx + math.cos(angle) * width/12;
 	item_curvey = item_starty + math.sin(angle) * height/12;
-	-- print(item_startx.." "..item_starty.." "..item_endx.." "..item_endy.." "..item_curvex.." "..item_curvey)
 
 	-- arrow
 	cairo_move_to(cr, item_startx, item_starty);
@@ -712,46 +660,48 @@ function conky_main(  )
 	set_color(1,0.5);
 	cairo_stroke(cr);
 
-	-- label text
+	text = string.format("%10s %6s %5s", "Free", "Total", "%Used");
 	set_color(1,1);
-	cairo_select_font_face(cr, "Inconsolata", 0 , 1);
-	cairo_set_font_size(cr, item_font_size);
+	cairo_text_extents(cr, text, extents)
+	cairo_move_to(cr, item_endx - 120, item_endy + item_font_size + 5);
+	cairo_show_text(cr, text);
 
-	-- read
-	text = "Read: "..conky_parse("${diskio_read}");
-	cairo_text_extents(cr,text,extents);
-	cairo_move_to(cr, item_endx - extents.width/2, item_endy+item_font_size+2);
-	cairo_show_text(cr,text);
+   -- the values
+   set_color(1,0.7);
+   cairo_select_font_face(cr,"Inconsolata",0,0);
+   cairo_set_font_size(cr,item_font_size/1.4);
+   local command = 'df -h | grep dev | egrep -v "^dev|tmp|boot" | cut -d"%" -f2 | awk \'{$1=$1};1\''
+   local handle = io.popen(command)
+   local result = handle:read("*a")
+   handle:close()
+   local i = 0
+   for drive in result:gmatch("[^\r\n]+") do
+      i = i + 1;
+      local free = string.format("%5s", conky_parse("${fs_free "..drive.."}"));
+      local used = string.format("%5s", conky_parse("${fs_size "..drive.."}"));
+      local perc = string.format("%5s", conky_parse("${fs_used_perc "..drive.."}%"));
+      perc_nr = tonumber(string.sub(perc, 1,-2));
+      if perc_nr > 85 then
+          cairo_set_source_rgba(cr,1,0,0,1);
+      end
+      drive = drive:gsub("%/run%/media%/quent%/", ""):sub(1,8)
+      text = string.format("%-8s  %-8s  %-8s  %-8s", string.upper(drive) , free, used, perc);
+      cairo_move_to(cr, item_endx - 125, item_endy + item_font_size/1.2 * (i+1) + 13);
+      cairo_show_text(cr,text);
+      set_color(1,0.7);
+      cairo_set_source_rgba(cr,1,1,1,0.7);
+   end
 
-	-- write
-	text = "Write: "..conky_parse("${diskio_write}");
-	cairo_text_extents(cr,text,extents);
-	cairo_move_to(cr, item_endx - extents.width/2, item_endy+item_font_size*2+2);
-	cairo_show_text(cr,text);
-
-
-	
-	-- gmail --------------------------------------------------------------- gmail new message -------------------------------------------------------------
-
-	if (min*60 + sec)%298 == 0 then
+	---------------------------- gmail -----------------------------
+--[=====[
+    if (min*60 + sec)%298 == 0 then
 		check_mail = 1;
 	end
 
 	if (min%5 == 0 and check_mail == 1) or start == 1 then
 	if internet == 1 then
-			-- old code selection on fullcount no longer working due to gmail changes
-			-- leaving code in for tutorial reasons and future change back?
-			-- local val = conky_parse("${execi 300 curl -u "..mail.."}");
-			--_,_,new_mail = string.find(val, "<fullcount>%s*(.-)%s*</fullcount>");
-
-			--or solution via Gmail.py - fill login and password in at gmail.py in scripts/gmail folder
-			--new_mail = conky_parse("${execi 300 python ~/.conky/Aurora/scripts/gmail/gmail.py}");
-	
-		--current solution
-		--or solution via bash code
-		--fill in login and password in gmail.sh in Octupi folder
 		new_mail = conky_parse("${execi 300 bash "..pathway.."gmail.sh}");
-				
+
 		end
 		check_mail = 0;
 		start = 0;
@@ -764,6 +714,18 @@ function conky_main(  )
 	if new_mail == nil then
 		new_mail = "Fill out settings!"
 	end
+--]=====]
+
+    chk_docker_srv = "systemctl show --property ActiveState docker | grep -c '=active'"
+    local file = io.popen(chk_docker_srv);
+    docker_on = tonumber(file:read('*a'));
+    io.close(file);
+
+    if docker_on == 1 then
+        running_containers = conky_parse("${execi 300 bash -c 'echo $(docker ps -q | wc -l)'}");
+    else
+        running_containers = "Not Running"
+    end
 
 	local angle = 300*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
@@ -788,25 +750,28 @@ function conky_main(  )
 	set_color(1,0.4);
 	--cairo_set_source_rgba(cr,1,1,1,0.4);
 	--if you want to color uncomment or comment these
-if tonumber(new_mail) ~= nil then
 
-	if tonumber(new_mail) > 0 then
+ --[=====[
+    if tonumber(new_mail) ~= nil then
 
-		if tonumber(new_mail) > 10 then
-		cairo_set_source_rgba(cr,0,1,0,0.4);
+		if tonumber(new_mail) > 0 then
+
+			if tonumber(new_mail) > 10 then
+			cairo_set_source_rgba(cr,0,1,0,0.4);
+			end
+			if tonumber(new_mail) > 30 then
+			cairo_set_source_rgba(cr,1,0,0,0.6);
+			end
 		end
-		if tonumber(new_mail) > 30 then
-		cairo_set_source_rgba(cr,1,0,0,0.6);
-		end
+
 	end
-
-end
+ --]=====]
 
 	cairo_fill(cr);
 
 	-- image
 	local ir = cairo_create(cs);
-	image_path = "mail";
+	image_path = "docker";
 	if color == "WHITE" then
 		image_path = pathway.."white/"..image_path
 	end
@@ -826,21 +791,18 @@ end
 	cairo_set_font_size(cr, item_font_size);
 
 	-- name text
-	text = "UNREAD";
+	text = "DOCKER";
 	cairo_text_extents(cr, text, extents)
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery - item_radius - 10);
 	cairo_show_text(cr, text);
 
 	-- value text
-	text = new_mail;
+	text = running_containers;
 	cairo_text_extents(cr, text, extents)
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
-	cairo_show_text(cr, new_mail);
+	cairo_show_text(cr, text);
 
-
-
-
-	-- battery --------------------------------------------------- battery --------------------------------------------------------------------
+	--------------------------- battery ----------------------------
 	local angle = 240*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -910,12 +872,9 @@ end
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
 	cairo_show_text(cr, text);
 
-
-	-- time and date ------------------------------------------ time and date
-	
+	------------------------ time and date -------------------------
 	local hour = conky_parse('${time %H}');
 	local minute = conky_parse('${time %M}');
-	--local part = conky_parse('${time %p}');
 	local day = conky_parse('${time %d}');
 	local month = conky_parse('${time %B}');
 	local year = conky_parse('${time %G}');
@@ -924,7 +883,6 @@ end
 	set_color(1,1);
 	cairo_select_font_face(cr, "Feena Casual", 0,0.9);
 	cairo_set_font_size(cr,height/8);
-	--text = hour..":"..minute..part;
 	text = hour..":"..minute;
 	cairo_text_extents(cr,text,extents)
 	cairo_move_to(cr, centerx-10 - extents.width/2,  height/6);
@@ -936,20 +894,18 @@ end
 	item_font_size = height/15;
 	cairo_select_font_face(cr, "Knife Fight Ballet",0,0);
 	cairo_set_font_size(cr, item_font_size)
-	text = day.. "  "..month.."  "..year;
+	text = day.."  "..month.."  "..year;
 	cairo_text_extents(cr,text,extents)
 	cairo_move_to(cr, centerx - extents.width/2,  time_height + height/30);
 	cairo_show_text(cr, text);
 
-
-	-- SPOTIFY ------------------------------------------------------------ SPOTIFY ----------------------------------------------------------------------------
-
-	local angle = 60*math.pi/180;
+	--------------------------- spotify ----------------------------
+	local angle = 65*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
 	local item_endx = centerx + math.cos(angle) * width/6;
 	local item_endy = centery + math.sin(angle) * height/6;
-	local item_curvex = centerx + math.cos(angle) * width/12;
+	local item_curvex = centerx + math.cos(angle) * width/10;
 	local item_curvey = centery + math.sin(angle) * height/10;
 	local item_radius = 15;
 	local item_centerx = item_endx + math.cos(angle) * (item_radius + 5);
@@ -994,10 +950,66 @@ end
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery - item_radius - 10);
 	cairo_show_text(cr, text);
 
+	------------------------ spotify data --------------------------
+	local is_running = conky_parse("${exec pidof spotify}");
+	if is_running ~= "" then
 
--- TEMP ------------------------------------------------------------ temp ----------------------------------------------------------------------------
+		-- arrow
+		angle = angle + 90*(math.pi/180);
+		item_startx = item_centerx + item_radius + 5;
+		item_starty = item_centery; -- + item_radius + 5;
+		item_curvex = item_startx - math.cos(angle) * width/12;
+		item_curvey = item_starty + math.sin(angle) * height/45;
+		item_endx = item_startx + 70 - math.cos(angle) * width/20;
+		item_endy = item_starty + math.sin(angle) * height/7;
 
+		cairo_move_to(cr, item_startx, item_starty);
+		cairo_curve_to(cr, item_curvex, item_curvey, item_curvex, item_curvey+20, item_endx, item_endy);
+		set_color(1,0.5);
+		cairo_stroke(cr);
 
+        --[=====[ image
+        image_path = pathway.."cover.png"
+        local ir = cairo_create(cs);
+        cairo_clip(ir);
+        cairo_new_path(ir);
+        
+        local image = cairo_image_surface_create_from_png(image_path);
+        w = cairo_image_surface_get_width(image);
+        h = cairo_image_surface_get_height(image);
+ 
+        cairo_scale(ir, 60/w, 60/h);
+        w = cairo_image_surface_get_width(image);
+        h = cairo_image_surface_get_height(image);
+
+        cairo_set_source_surface(ir, image, item_endx - 25, item_endy);
+        cairo_paint(ir);
+ 
+        cairo_surface_destroy(image);
+        cairo_destroy(ir);
+        
+        --draw_image(spotify_album_surface, item_endx - 25, item_endy, 60, image_path);
+		--]=====]
+        
+        -- text
+		set_color(1,1);
+		cairo_select_font_face(cr,"Inconsolata",0,0);
+		cairo_set_font_size(cr,item_font_size/1.2);
+
+		local i = 0;
+		local metadata_file = io.open(pathway.."metadata.txt", "r")
+        if metadata_file ~= nil then
+            io.input(metadata_file)
+            for text in io.lines() do
+			    i = i + 1;
+			    cairo_move_to(cr, item_endx + 45, item_endy + 10 + item_font_size/1.2 * i);
+			    cairo_show_text(cr, text);
+	        end
+            io.close(metadata_file)
+        end
+	end
+
+	---------------------------- temp ------------------------------
 	local angle = 270*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -1013,7 +1025,6 @@ end
 	-- check your computer with command sensors to see if "Core 0" exists
 	local temp = conky_parse("${execi 10 sensors | grep 'Core 0' | awk {'print $3'}}");
 
-
 	-- arrow to temp
 	cairo_move_to(cr, item_startx, item_starty);
 	cairo_curve_to(cr, item_curvex, item_curvey, item_curvex, item_curvey-70, item_endx, item_endy);
@@ -1023,16 +1034,20 @@ end
 	-- background circle
 	cairo_arc(cr, item_centerx, item_centery, item_radius+5,  0, 2*math.pi );
 	set_color(1,0.4);
-	--cairo_set_source_rgba(cr,1,1,1,0.4);
-	
-	--if you want to color uncomment or comment these
-	--temp_to_number = tonumber(string.sub(temp,2,3))
-	--if temp_to_number > 50 then
-	--	cairo_set_source_rgba(cr,0,1,0,0.4);
-	--end
-	--if temp_to_number > 70 then
-	--	cairo_set_source_rgba(cr,1,0,0,0.6);
-	--end
+	cairo_set_source_rgba(cr,1,1,1,0.4);
+
+    temp_val = tonumber(string.sub(temp,2,3));
+    if temp_val ~= nil then
+        if temp_val <= 60 then
+	 	    cairo_set_source_rgba(cr,0,1,0,0.4);
+        elseif temp_val > 60 then
+            cairo_set_source_rgba(cr,0.64,0.67,0.5,0.4);
+        elseif temp_val > 70 then
+            cairo_set_source_rgba(cr,0.85,0.54,0.51,0.4);
+        else
+	 	    cairo_set_source_rgba(cr,1,0,0,0.6);
+	    end
+    end
 
 	cairo_fill(cr);
 
@@ -1069,9 +1084,7 @@ end
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
 	cairo_show_text(cr, temp);
 
-
--- network ----------------------------------------------------------------------- network -------------------------------------------------------------------------
-
+	--------------------------- network ----------------------------
 	local angle = 330*math.pi/180;
 	local item_startx = centerx + math.cos(angle) * face_radius;
 	local item_starty = centery + math.sin(angle) * face_radius;
@@ -1085,7 +1098,8 @@ end
 	local item_font_size = height/50;
 
 	-- ip address interface enp2s0 or wlan0 is filled in settings
-	local network = conky_parse("${addr "..interface.."}");
+	local local_address = conky_parse("${addr "..interface.."}");
+    local remote_address = conky_parse("${execi 300 curl -s icanhazip.com}");
 
 	-- arrow to network
 	cairo_move_to(cr, item_startx, item_starty);
@@ -1126,22 +1140,24 @@ end
 	cairo_show_text(cr, text);
 
 	-- value text
-	text = network;
+	text = local_address;
 	cairo_text_extents(cr, text, extents)
 	cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 8);
 	cairo_show_text(cr, text);
 
+  text = remote_address;
+  cairo_text_extents(cr, text, extents)
+  cairo_move_to(cr, item_centerx - extents.width/2, item_centery + item_radius + item_font_size + 26);
+  cairo_show_text(cr, text);
 
-	-- network stats ------------------------------------------------ network stats -------------------------------------------------------------
-
+	------------------------ network stats -------------------------
 	angle = angle - 10*(math.pi/180);
-	item_startx = item_centerx + item_radius + 5;	
+	item_startx = item_centerx + item_radius + 5;
 	item_starty = item_centery;
 	item_endx = item_startx + math.cos(angle) * width/6;
 	item_endy = item_starty + math.sin(angle) * height/6;
 	item_curvex = item_startx + math.cos(angle) * width/12;
 	item_curvey = item_starty + math.sin(angle) * height/12;
-	-- print(item_startx.." "..item_starty.." "..item_endx.." "..item_endy.." "..item_curvex.." "..item_curvey)
 
 	-- arrow
 	cairo_move_to(cr, item_startx, item_starty);
@@ -1155,8 +1171,8 @@ end
 	cairo_move_to(cr,item_endx + width/15,item_endy+item_font_size+5);
 	cairo_show_text(cr,"Download");
 	cairo_move_to(cr,item_endx - width/20,item_endy+item_font_size*2+5);
-	cairo_show_text(cr, "Now");	
-	
+	cairo_show_text(cr, "Now");
+
 	cairo_select_font_face(cr,"Inconsolata",0,0)
 	cairo_set_font_size(cr,item_font_size/1.4);
 	set_color(1,0.6);
@@ -1165,51 +1181,44 @@ end
 	cairo_show_text(cr, text);
 	text = conky_parse("${downspeed "..interface.."}");
 	cairo_move_to(cr,item_endx + width/15,item_endy+item_font_size*2+5);
-	cairo_show_text(cr, text);	
+	cairo_show_text(cr, text);
 
-	
-	local month = conky_parse("${time %b}");
-	local year = conky_parse("${time %y}");
+
+	local month = conky_parse("${time %m}");
+	local year = conky_parse("${time %Y}");
 	local stats = conky_parse("${execi 10 vnstat -i "..interface.."}");
 	local ntotal_recieved, ntotal_trans, nmonth_received, nmonth_trans, ntoday_rec, ntoday_trans;
-	-- print(stats);
 	if(stats ~= "") then
 		_,nex,ntotal_recieved = string.find(stats, "rx:%s*(.-)iB");
 		if(ntotal_recieved ~= nil ) then
 			total_recieved = ntotal_recieved;
 		end
-		-- print("tr: "..total_recieved.."iB");
 		_,nex,ntotal_trans = string.find(stats, "tx:%s*(.-)iB",nex);
 		if(ntotal_trans ~= nil) then
 			total_trans = ntotal_trans;
 		end
-		-- print("tt: "..total_trans..'iB');
 
 		_,nex,_ = string.find(stats, "monthly",nex);
 
-		_,nex,nmonth_received = string.find(stats, month.."%s*\'"..year.."%s*(.-)iB",nex);
+		_,nex,nmonth_received = string.find(stats, year.."%s*-"..month.."%s*(.-)iB",nex);
 		if(nmonth_received ~= nil) then
 			month_recieved = nmonth_received;
 		end
-		-- print("mr: "..month_recieved..'iB');
 
 		_,nex,nmonth_trans = string.find(stats, "|%s*(.-)iB",nex);
 		if(nmonth_trans ~= nil) then
 			month_trans = nmonth_trans;
 		end
-		-- print("mt: "..month_trans..'iB');
-
-		_,nex,ntoday_rec = string.find(stats, "today%s*(.-)iB",nex);
-		if(ntoday_rec ~= nil) then
-			today_rec = ntoday_rec;
+		_,nex1,_ = string.find(stats, "today%s+",nex);
+		if(nex1 ~= nil) then
+			_,nex,today_rec = string.find(stats, "%s*(.-)iB",nex1);
+			_,nex,today_trans = string.find(stats, "|%s*(.-)iB",nex);
+        else
+			today_rec = "0 M";
+			today_trans = "0 M";
 		end
-		-- print("tor: "..today_rec..'iB');
 
-		_,nex,ntoday_trans = string.find(stats, "|%s*(.-)iB",nex);
-		if(ntoday_trans ~= nil) then
-			today_trans = ntoday_trans;
-		end
-		-- print("tot: "..today_trans..'iB');
+        --print("tor:"..today_rec..";tot:"..today_trans)
 
 		cairo_set_font_size(cr, item_font_size);
 		cairo_select_font_face(cr, "Inconsolata",0,1);
@@ -1240,10 +1249,6 @@ end
 		cairo_move_to(cr,item_endx + width/15 ,item_endy+item_font_size*5+5);
 		cairo_show_text(cr,total_recieved.."iB");
 	end
-
-
-
-
 
 	-- destroying the cairo surface
 	cairo_destroy(cr);
